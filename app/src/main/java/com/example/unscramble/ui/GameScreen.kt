@@ -16,6 +16,7 @@
 package com.example.unscramble.ui
 
 import android.app.Activity
+import android.graphics.Color.parseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -118,11 +120,16 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
             }
         }
 
-        GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
+        GameStatus(
+            score = gameUiState.score,
+            lives = gameUiState.lives,
+            modifier = Modifier.padding(20.dp)
+        )
 
         if (gameUiState.isGameOver) {
             FinalScoreDialog(
                 score = gameUiState.score,
+                livesRemain = gameUiState.livesRemain,
                 onPlayAgain = { gameViewModel.resetGame() }
             )
         }
@@ -130,7 +137,7 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
 }
 
 @Composable
-fun GameStatus(score: Int, modifier: Modifier = Modifier) {
+fun GameStatus(score: Int, lives: Int, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier
     ) {
@@ -140,6 +147,19 @@ fun GameStatus(score: Int, modifier: Modifier = Modifier) {
             modifier = Modifier.padding(8.dp)
         )
 
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = Color(parseColor("#87a96b"))
+        )
+    ) {
+        Text(
+            text = stringResource(R.string.lives, lives),
+            style = typography.headlineMedium,
+            modifier = Modifier.padding(8.dp)
+        )
     }
 }
 
@@ -219,10 +239,18 @@ fun GameLayout(
 @Composable
 private fun FinalScoreDialog(
     score: Int,
+    livesRemain: Boolean,
     onPlayAgain: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val activity = (LocalContext.current as Activity)
+
+    val titlePrompt: Int = if (livesRemain) {
+        R.string.congratulations
+    }
+    else {
+        R.string.game_over
+    }
 
     AlertDialog(
         onDismissRequest = {
@@ -230,7 +258,11 @@ private fun FinalScoreDialog(
             // button. If you want to disable that functionality, simply use an empty
             // onCloseRequest.
         },
-        title = { Text(text = stringResource(R.string.congratulations)) },
+        title = {
+            Text(
+                text = stringResource(titlePrompt)
+            )
+                },
         text = { Text(text = stringResource(R.string.you_scored, score)) },
         modifier = modifier,
         dismissButton = {

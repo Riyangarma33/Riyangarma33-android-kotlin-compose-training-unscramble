@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.unscramble.data.LIVES_DECREASE
 import com.example.unscramble.data.MAX_NO_OF_WORDS
 import com.example.unscramble.data.SCORE_INCREASE
 import com.example.unscramble.data.allWords
@@ -72,12 +73,27 @@ class GameViewModel : ViewModel() {
             // User's guess is correct, increase the score
             // and call updateGameState() to prepare the game for next round
             val updatedScore = _uiState.value.score.plus(SCORE_INCREASE)
-            updateGameState(updatedScore)
+            updateGameState(updatedScore, _uiState.value.lives)
         } else {
             // User's guess is wrong, show an error
             _uiState.update { currentState ->
                 currentState.copy(isGuessedWordWrong = true)
             }
+            // Check the lives
+            if (_uiState.value.lives > 0) {
+                val updatedLives = _uiState.value.lives.minus(LIVES_DECREASE)
+                updateGameState(_uiState.value.score, updatedLives)
+
+//                if (_uiState.value.lives == 0) {
+//                    _uiState.update { currentState ->
+//                        currentState.copy(
+//                            isGameOver = true,
+//                            livesRemain = false
+//                        )
+//                    }
+//                }
+            }
+
         }
         // Reset user guess
         updateUserGuess("")
@@ -87,7 +103,10 @@ class GameViewModel : ViewModel() {
      * Skip to next word
      */
     fun skipWord() {
-        updateGameState(_uiState.value.score)
+        updateGameState(
+            _uiState.value.score,
+            _uiState.value.lives.minus(LIVES_DECREASE)
+        )
         // Reset user guess
         updateUserGuess("")
     }
@@ -96,8 +115,19 @@ class GameViewModel : ViewModel() {
      * Picks a new currentWord and currentScrambledWord and updates UiState according to
      * current game state.
      */
-    private fun updateGameState(updatedScore: Int) {
-        if (usedWords.size == MAX_NO_OF_WORDS){
+    private fun updateGameState(updatedScore: Int, updatedLives: Int) {
+        if (updatedLives == 0) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    isGuessedWordWrong = true,
+                    score = updatedScore,
+                    lives = updatedLives,
+                    isGameOver = true,
+                    livesRemain = false
+                )
+            }
+        }
+        else if (usedWords.size == MAX_NO_OF_WORDS){
             //Last round in the game, update isGameOver to true, don't pick a new word
             _uiState.update { currentState ->
                 currentState.copy(
@@ -113,7 +143,8 @@ class GameViewModel : ViewModel() {
                     isGuessedWordWrong = false,
                     currentScrambledWord = pickRandomWordAndShuffle(),
                     currentWordCount = currentState.currentWordCount.inc(),
-                    score = updatedScore
+                    score = updatedScore,
+                    lives = updatedLives
                 )
             }
         }
